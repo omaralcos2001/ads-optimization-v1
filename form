@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>ads-optimization-v1</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ads Optimization</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --g-900:#0e3b17; --g-700:#1f5e25; --g-500:#2e7d32; --g-300:#69b77a;
+    --bg:#f5f7f6; --card:#fff; --line:#e6ebe8; --text:#24312a; --muted:#6b7a72; --ring:#9ad0a7;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:radial-gradient(1200px 800px at 20% -10%, #f1f8f2 0%, var(--bg) 50%) no-repeat;
+    color:var(--text); font-family:"Montserrat",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  }
+  .page{max-width:920px; margin:28px auto; padding:0 16px}
+
+  /* Card */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px;
+        box-shadow:0 1px 2px rgba(0,0,0,.04), 0 12px 28px rgba(30,80,50,.08);
+        margin-bottom:22px; overflow:hidden;}
+  .card-h{background:linear-gradient(180deg,#eaf6ee 0%,#e1f1e7 100%); color:var(--g-700);
+          padding:14px 18px; text-align:center; font-size:20px; font-weight:600;}
+  .card-b{padding:20px;}
+
+  /* Layout */
+  .grid{display:grid; gap:18px;}
+  @media (min-width:780px){ .grid-2{grid-template-columns:1fr 1fr;} }
+
+  /* Labels + inputs */
+  label.lbl{font-size:12.5px; color:var(--muted); margin:0 0 6px; font-weight:500;}
+  input[type="text"],input[type="number"],input[type="email"],select,textarea{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
+    font-size:14px; background:#fff; transition:border-color .15s, box-shadow .15s;
+  }
+  textarea{min-height:56px; resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--g-300);
+    box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 45%,transparent);}
+
+  /* File input polish */
+  input[type="file"]{padding:10px 12px;}
+  input[type="file"]::file-selector-button{
+    margin-right:10px; border:1px solid var(--g-500); background:var(--g-500);
+    color:#fff; padding:8px 12px; border-radius:10px; font-size:12.5px; cursor:pointer;
+  }
+
+  /* Buttons */
+  .btn{border:1px solid var(--g-500);
+       background:linear-gradient(180deg,var(--g-500), color-mix(in oklab,var(--g-500) 85%, #0a0 15%));
+       color:#fff; border-radius:12px; padding:10px 18px; font-size:14px; font-weight:600;
+       cursor:pointer; box-shadow:0 8px 16px rgba(46,125,50,.18);}
+  .btn[disabled]{opacity:.6; cursor:not-allowed}
+
+  /* Checkboxes */
+  .checks{display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin:8px 0 12px}
+  .checks label{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:400;}
+  .checks input[type="checkbox"]{width:18px; height:18px; accent-color:var(--g-500); border-radius:6px;}
+
+  .hidden{display:none}
+  .muted{color:var(--muted); font-size:13px}
+  .center{text-align:center}
+  .hr{height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent)}
+
+  /* Centered email label + input */
+  .email-wrap{max-width:480px; margin:0 auto;}
+  .email-wrap .lbl{ text-align:center; }
+  .email-wrap input{ display:block; margin:0 auto; }
+  
+  /* Webhook response block */
+  pre.response{
+    margin:0; padding:12px; background:#f6f8f7; border:1px solid var(--line);
+    border-radius:12px; overflow:auto; max-height:320px;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12.5px; color:#2d2d2d;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-h">Choose Optimization</div>
+    <div class="card-b">
+      <p class="muted center">Select one or both, then proceed.</p>
+      <div class="checks">
+        <label><input id="ppcCheck" type="checkbox"> Pay-Per-Click Ads Optimization</label>
+        <label><input id="lsaCheck" type="checkbox"> Local Services Ads Optimization</label>
+      </div>
+      <div class="email-wrap grid">
+        <div>
+          <label class="lbl">Email (required)</label>
+          <input type="email" id="emailInput" placeholder="name@example.com" required>
+        </div>
+      </div>
+      <div class="center" style="margin-top:12px">
+        <button id="proceedBtn" class="btn">Proceed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <form id="mainForm" class="hidden">
+
+    <!-- PPC -->
+    <div id="ppcCard" class="card hidden">
+      <div class="card-h">Pay-Per-Click Ads Optimization</div>
+      <div class="card-b grid">
+        <div>
+          <label class="lbl">Leads transferred from WhatConverts to Google Ads correctly?</label>
+          <select id="ppcTransfer">
+            <option value="" disabled selected>Choose</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div id="ppcIssues1" class="hidden">
+          <label class="lbl">Most likely issues</label>
+          <textarea id="ppcIssues1Text" placeholder="Describe issues"></textarea>
+        </div>
+
+        <div>
+          <label class="lbl">Leads in WhatConverts include spam or irrelevant inquiries?</label>
+          <select id="ppcSpam">
+            <option value="" disabled selected>Choose</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div id="ppcIssues2" class="hidden">
+          <label class="lbl">Most likely issues</label>
+          <textarea id="ppcIssues2Text" placeholder="Describe issues"></textarea>
+        </div>
+
+        <div class="hr"></div>
+
+        <!-- Optimization rows: left = details (label), right = file (no label/“Screenshot” omitted) -->
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Optimization #1 – Details</label>
+            <textarea id="ppcOpt1"></textarea>
+          </div>
+          <div style="align-self:end">
+            <input type="file" id="ppcShot1" accept="image/*" aria-label="Upload screenshot for optimization #1">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Optimization #2 – Details</label>
+            <textarea id="ppcOpt2"></textarea>
+          </div>
+          <div style="align-self:end">
+            <input type="file" id="ppcShot2" accept="image/*" aria-label="Upload screenshot for optimization #2">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Optimization #3 – Details</label>
+            <textarea id="ppcOpt3"></textarea>
+          </div>
+          <div style="align-self:end">
+            <input type="file" id="ppcShot3" accept="image/*" aria-label="Upload screenshot for optimization #3">
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">CPC</label>
+            <input type="number" step="0.01" id="ppcCpc">
+          </div>
+          <div>
+            <label class="lbl">CPL</label>
+            <input type="number" step="0.01" id="ppcCpl">
+          </div>
+        </div>
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Number of Leads</label>
+            <input type="number" step="1" id="ppcLeads">
+          </div>
+          <div>
+            <label class="lbl">Conversion Rate (percent)</label>
+            <input type="number" step="0.01" min="0" max="100" id="ppcCr">
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Ad Spend Status</label>
+          <select id="ppcSpend">
+            <option value="" disabled selected>Choose</option>
+            <option>Underspending</option>
+            <option>Overspending</option>
+            <option>Just right</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- LSA -->
+    <div id="lsaCard" class="card hidden">
+      <div class="card-h">Local Services Ads (LSA) Optimization</div>
+      <div class="card-b grid">
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Allowed Monthly Budget</label>
+            <input type="number" step="0.01" id="lsaAllowedBudget">
+          </div>
+          <div>
+            <label class="lbl">Actual Spend This Month</label>
+            <input type="number" step="0.01" id="lsaActualSpend">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Dummy Budget Used?</label>
+            <select id="dummySelect">
+              <option value="" disabled selected>Choose</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div id="dummyAmountWrap" class="hidden">
+            <label class="lbl">Dummy Budget Amount</label>
+            <input type="number" step="0.01" id="dummyAmount">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Total Leads Generated</label>
+            <input type="number" step="1" id="lsaLeadsGen">
+          </div>
+          <div>
+            <label class="lbl">Total Billed Leads</label>
+            <input type="number" step="1" id="lsaBilledLeads">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">CPL</label>
+            <input type="number" step="0.01" id="lsaCpl">
+          </div>
+          <div>
+            <label class="lbl">Call Answer Rate (percent)</label>
+            <input type="number" step="0.01" min="0" max="100" id="lsaAnswerRate">
+          </div>
+        </div>
+
+        <div>
+          <label class="lbl">Google Review Score & Count</label>
+          <input type="number" step="1" id="lsaReviewScore">
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Lead Quality Check (Relevant?)</label>
+            <select id="leadSelect">
+              <option value="" disabled selected>Choose</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div id="leadActionsWrap" class="hidden">
+            <label class="lbl">Actions Taken</label>
+            <textarea id="leadActions"></textarea>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Budget Pacing Review (Budget fully utilized?)</label>
+            <select id="budgetSelect">
+              <option value="" disabled selected>Choose</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div id="budgetActionsWrap" class="hidden">
+            <label class="lbl">Actions Taken</label>
+            <textarea id="budgetActions"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <label class="lbl">Profile Optimizations</label>
+          <select id="profileSelect">
+            <option value="" disabled selected>Choose</option>
+            <option>Hours updated</option>
+            <option>Attorney profiles</option>
+            <option>Images</option>
+            <option>Service areas</option>
+            <option>Review strategy</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div id="profileOtherWrap" class="hidden">
+          <label class="lbl">Please specify</label>
+          <input type="text" id="profileOtherText" placeholder="Type your answer">
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT -->
+    <div id="submitCard" class="card hidden">
+      <div class="card-b center">
+        <button id="submitBtn" type="submit" class="btn">Submit</button>
+        <div id="statusMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- WEBHOOK RESPONSE -->
+    <div id="respCard" class="card hidden">
+      <div class="card-b">
+        <div id="respHeader" class="muted" style="margin-bottom:8px">Webhook response</div>
+        <pre id="respBody" class="response"></pre>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  // Selector
+  const ppcCheck = document.getElementById('ppcCheck');
+  const lsaCheck = document.getElementById('lsaCheck');
+  const proceedBtn = document.getElementById('proceedBtn');
+  const emailInput = document.getElementById('emailInput');
+
+  // Containers
+  const mainForm = document.getElementById('mainForm');
+  const ppcCard  = document.getElementById('ppcCard');
+  const lsaCard  = document.getElementById('lsaCard');
+  const submitCard = document.getElementById('submitCard');
+
+  // Response elements
+  const respCard   = document.getElementById('respCard');
+  const respHeader = document.getElementById('respHeader');
+  const respBody   = document.getElementById('respBody');
+
+  // Utility: show target when select equals specific value
+  function showWhen(selectEl, value, targetEl){
+    const sync = ()=> targetEl.classList.toggle('hidden', selectEl.value !== value);
+    selectEl.addEventListener('change', sync);
+    sync();
+  }
+
+  proceedBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
+    if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
+
+    mainForm.classList.remove('hidden');
+    ppcCard.classList.toggle('hidden', !ppcCheck.checked);
+    lsaCard.classList.toggle('hidden', !lsaCheck.checked);
+    submitCard.classList.remove('hidden');
+    respCard.classList.add('hidden');
+
+    // PPC logic
+    showWhen(document.getElementById('ppcTransfer'),'no', document.getElementById('ppcIssues1')); // issues when NO
+    showWhen(document.getElementById('ppcSpam'),'yes', document.getElementById('ppcIssues2'));    // issues when YES
+
+    // LSA logic
+    showWhen(document.getElementById('dummySelect'),'yes', document.getElementById('dummyAmountWrap'));
+    showWhen(document.getElementById('leadSelect'),'yes', document.getElementById('leadActionsWrap'));
+    showWhen(document.getElementById('budgetSelect'),'yes', document.getElementById('budgetActionsWrap'));
+    const profileSel = document.getElementById('profileSelect');
+    const profileWrap = document.getElementById('profileOtherWrap');
+    const syncProfile = ()=> profileWrap.classList.toggle('hidden', profileSel.value !== 'other');
+    profileSel.addEventListener('change', syncProfile); syncProfile();
+
+    mainForm.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  // Submit to webhook as JSON and show response
+  const statusMsg = document.getElementById('statusMsg');
+  const submitBtn = document.getElementById('submitBtn');
+  mainForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    submitBtn.disabled = true;
+    statusMsg.textContent = 'Sending…';
+    respCard.classList.add('hidden');
+
+    const payload = {
+      email: emailInput.value,
+      selected: { ppc: !ppcCard.classList.contains('hidden'),
+                  lsa: !lsaCard.classList.contains('hidden') },
+
+      ppc: {
+        transferCorrect: val('ppcTransfer'),
+        transferIssues: val('ppcIssues1Text'),
+        spamPresent: val('ppcSpam'),
+        spamIssues: val('ppcIssues2Text'),
+        optimizations: [{details:val('ppcOpt1')},{details:val('ppcOpt2')},{details:val('ppcOpt3')}],
+        metrics: {
+          cpc: num('ppcCpc'), cpl: num('ppcCpl'),
+          leads: int('ppcLeads'), conversionRatePercent: num('ppcCr'),
+          spendStatus: val('ppcSpend')
+        }
+      },
+
+      lsa: {
+        allowedMonthlyBudget: num('lsaAllowedBudget'),
+        actualSpendThisMonth: num('lsaActualSpend'),
+        dummyBudgetUsed: val('dummySelect'),
+        dummyBudgetAmount: num('dummyAmount'),
+        totalLeadsGenerated: int('lsaLeadsGen'),
+        totalBilledLeads: int('lsaBilledLeads'),
+        cpl: num('lsaCpl'),
+        callAnswerRatePercent: num('lsaAnswerRate'),
+        googleReviewScoreAndCount: int('lsaReviewScore'),
+        leadQualityRelevant: val('leadSelect'),
+        leadQualityActions: val('leadActions'),
+        budgetPacingUtilized: val('budgetSelect'),
+        budgetPacingActions: val('budgetActions'),
+        profileOptimization: val('profileSelect'),
+        profileOptimizationOther: val('profileOtherText')
+      }
+    };
+
+    try{
+      const res = await fetch('https://n8n-14lp.onrender.com/webhook/ads-optimization', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      });
+
+      // Parse JSON if possible; otherwise text
+      let bodyText;
+      try {
+        const data = await res.clone().json();
+        bodyText = JSON.stringify(data, null, 2);
+      } catch {
+        bodyText = await res.text();
+      }
+
+      respHeader.textContent = `Webhook response • ${res.status} ${res.statusText}${res.ok ? '' : ' (not ok)'}`;
+      respBody.textContent = bodyText;
+      respCard.classList.remove('hidden');
+
+      statusMsg.textContent = res.ok ? 'Success! Data sent.' : 'Sent, but the server returned an error.';
+      respCard.scrollIntoView({behavior:'smooth', block:'start'});
+    }catch(err){
+      statusMsg.textContent = 'Network error. Please try again.';
+      respHeader.textContent = 'Webhook response • Network error';
+      respBody.textContent = String(err);
+      respCard.classList.remove('hidden');
+      console.error(err);
+    }finally{
+      submitBtn.disabled = false;
+    }
+  });
+
+  // helpers
+  function val(id){ const el=document.getElementById(id); return el?el.value:''; }
+  function num(id){ const n=parseFloat(val(id)); return isNaN(n)?null:n; }
+  function int(id){ const n=parseInt(val(id)); return isNaN(n)?null:n; }
+</script>
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
