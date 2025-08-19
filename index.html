@@ -1,14 +1,4 @@
 <!DOCTYPE html>
-<html lang="en" >
-<head>
-  <meta charset="UTF-8">
-  <title>ads-optimization-v1</title>
-  
-
-</head>
-<body>
-<!-- partial:index.partial.html -->
-<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -41,13 +31,27 @@
 
   /* Labels + inputs */
   label.lbl{font-size:12.5px; color:var(--muted); margin:0 0 6px; font-weight:500;}
-  input[type="text"],input[type="number"],input[type="email"],select,textarea{
+  .subttl{font-size:14px; font-weight:600; color:var(--g-700); margin:6px 0 2px;}
+  input[type="text"],input[type="number"],input[type="email"],input[type="date"],select,textarea{
     width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
     font-size:14px; background:#fff; transition:border-color .15s, box-shadow .15s;
   }
   textarea{min-height:56px; resize:vertical}
   input:focus,select:focus,textarea:focus{outline:none; border-color:var(--g-300);
     box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 45%,transparent);}
+
+  /* Prefix $ and suffix % adorners (visual only) */
+  .currency,.percent{position:relative;}
+  .currency .prefix{
+    position:absolute; left:12px; top:50%; transform:translateY(-50%);
+    font-size:13px; color:var(--muted);
+  }
+  .currency input{padding-left:24px;}
+  .percent .suffix{
+    position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    font-size:13px; color:var(--muted);
+  }
+  .percent input{padding-right:24px; text-align:right;}
 
   /* File input polish */
   input[type="file"]{padding:10px 12px;}
@@ -70,20 +74,14 @@
 
   .hidden{display:none}
   .muted{color:var(--muted); font-size:13px}
+  .note{color:var(--muted); font-size:12.5px; margin-top:6px}
   .center{text-align:center}
   .hr{height:1px; background:linear-gradient(90deg,transparent,var(--line),transparent)}
 
-  /* Centered email label + input */
-  .email-wrap{max-width:480px; margin:0 auto;}
+  /* Centered email block */
+  .email-wrap{max-width:560px; margin:0 auto;}
   .email-wrap .lbl{ text-align:center; }
-  .email-wrap input{ display:block; margin:0 auto; }
-  
-  /* Webhook response block */
-  pre.response{
-    margin:0; padding:12px; background:#f6f8f7; border:1px solid var(--line);
-    border-radius:12px; overflow:auto; max-height:320px;
-    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12.5px; color:#2d2d2d;
-  }
+  .email-wrap input, .email-wrap select{ display:block; margin:0 auto; }
 </style>
 </head>
 <body>
@@ -98,12 +96,23 @@
         <label><input id="ppcCheck" type="checkbox"> Pay-Per-Click Ads Optimization</label>
         <label><input id="lsaCheck" type="checkbox"> Local Services Ads Optimization</label>
       </div>
+
+      <!-- Email + Client + Date -->
       <div class="email-wrap grid">
         <div>
           <label class="lbl">Email (required)</label>
           <input type="email" id="emailInput" placeholder="name@example.com" required>
         </div>
+        <div>
+          <label class="lbl">Client Name (required)</label>
+          <input type="text" id="clientName" placeholder="Enter client name" required>
+        </div>
+        <div>
+          <label class="lbl">Date (required)</label>
+          <input type="date" id="dateInput" required>
+        </div>
       </div>
+
       <div class="center" style="margin-top:12px">
         <button id="proceedBtn" class="btn">Proceed</button>
       </div>
@@ -111,12 +120,14 @@
   </div>
 
   <!-- STEP 2 -->
-  <form id="mainForm" class="hidden">
+  <form id="mainForm" class="hidden" enctype="multipart/form-data">
 
     <!-- PPC -->
     <div id="ppcCard" class="card hidden">
       <div class="card-h">Pay-Per-Click Ads Optimization</div>
       <div class="card-b grid">
+
+        <!-- Transfer & Spam checks -->
         <div>
           <label class="lbl">Leads transferred from WhatConverts to Google Ads correctly?</label>
           <select id="ppcTransfer">
@@ -143,9 +154,8 @@
           <textarea id="ppcIssues2Text" placeholder="Describe issues"></textarea>
         </div>
 
+        <!-- Optimization rows directly after spam question -->
         <div class="hr"></div>
-
-        <!-- Optimization rows: left = details (label), right = file (no label/“Screenshot” omitted) -->
         <div class="grid grid-2">
           <div>
             <label class="lbl">Optimization #1 – Details</label>
@@ -155,7 +165,6 @@
             <input type="file" id="ppcShot1" accept="image/*" aria-label="Upload screenshot for optimization #1">
           </div>
         </div>
-
         <div class="grid grid-2">
           <div>
             <label class="lbl">Optimization #2 – Details</label>
@@ -165,7 +174,6 @@
             <input type="file" id="ppcShot2" accept="image/*" aria-label="Upload screenshot for optimization #2">
           </div>
         </div>
-
         <div class="grid grid-2">
           <div>
             <label class="lbl">Optimization #3 – Details</label>
@@ -178,26 +186,34 @@
 
         <div class="hr"></div>
 
+        <!-- This Month So Far (PPC) -->
+        <div>
+          <div class="subttl">This Month So Far</div>
+        </div>
         <div class="grid grid-2">
-          <div>
-            <label class="lbl">CPC</label>
-            <input type="number" step="0.01" id="ppcCpc">
+          <div class="currency">
+            <label class="lbl">CPC (cost per click) so far this month</label>
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="ppcCpc" inputmode="decimal" placeholder="0.00">
           </div>
-          <div>
-            <label class="lbl">CPL</label>
-            <input type="number" step="0.01" id="ppcCpl">
+          <div class="currency">
+            <label class="lbl">CPL (cost per lead) so far this month</label>
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="ppcCpl" inputmode="decimal" placeholder="0.00">
           </div>
         </div>
         <div class="grid grid-2">
           <div>
-            <label class="lbl">Number of Leads</label>
-            <input type="number" step="1" id="ppcLeads">
+            <label class="lbl">Number of leads so far this month</label>
+            <input type="number" step="1" id="ppcLeads" inputmode="numeric" placeholder="0">
           </div>
-          <div>
-            <label class="lbl">Conversion Rate (percent)</label>
-            <input type="number" step="0.01" min="0" max="100" id="ppcCr">
+          <div class="percent">
+            <label class="lbl">Conversion rate (%) so far this month</label>
+            <span class="suffix">%</span>
+            <input type="number" step="0.01" min="0" max="100" id="ppcCr" inputmode="decimal" placeholder="0.00">
           </div>
         </div>
+
         <div>
           <label class="lbl">Ad Spend Status</label>
           <select id="ppcSpend">
@@ -206,6 +222,14 @@
             <option>Overspending</option>
             <option>Just right</option>
           </select>
+          <div class="note">per the Ads Quick Sheet</div>
+        </div>
+
+        <!-- Ad Spend Appointed for the Month ($) -->
+        <div class="currency">
+          <label class="lbl">Ad Spend Appointed for the Month</label>
+          <span class="prefix">$</span>
+          <input type="number" step="0.01" id="ppcAppointedSpend" inputmode="decimal" placeholder="0.00">
         </div>
       </div>
     </div>
@@ -215,14 +239,17 @@
       <div class="card-h">Local Services Ads (LSA) Optimization</div>
       <div class="card-b grid">
 
+        <!-- First three fields -->
         <div class="grid grid-2">
-          <div>
+          <div class="currency">
             <label class="lbl">Allowed Monthly Budget</label>
-            <input type="number" step="0.01" id="lsaAllowedBudget">
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="lsaAllowedBudget" inputmode="decimal" placeholder="0.00">
           </div>
-          <div>
+          <div class="currency">
             <label class="lbl">Actual Spend This Month</label>
-            <input type="number" step="0.01" id="lsaActualSpend">
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="lsaActualSpend" inputmode="decimal" placeholder="0.00">
           </div>
         </div>
 
@@ -235,41 +262,56 @@
               <option value="no">No</option>
             </select>
           </div>
-          <div id="dummyAmountWrap" class="hidden">
+          <div id="dummyAmountWrap" class="hidden currency">
             <label class="lbl">Dummy Budget Amount</label>
-            <input type="number" step="0.01" id="dummyAmount">
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="dummyAmount" inputmode="decimal" placeholder="0.00">
           </div>
-        </div>
-
-        <div class="grid grid-2">
-          <div>
-            <label class="lbl">Total Leads Generated</label>
-            <input type="number" step="1" id="lsaLeadsGen">
-          </div>
-          <div>
-            <label class="lbl">Total Billed Leads</label>
-            <input type="number" step="1" id="lsaBilledLeads">
-          </div>
-        </div>
-
-        <div class="grid grid-2">
-          <div>
-            <label class="lbl">CPL</label>
-            <input type="number" step="0.01" id="lsaCpl">
-          </div>
-          <div>
-            <label class="lbl">Call Answer Rate (percent)</label>
-            <input type="number" step="0.01" min="0" max="100" id="lsaAnswerRate">
-          </div>
-        </div>
-
-        <div>
-          <label class="lbl">Google Review Score & Count</label>
-          <input type="number" step="1" id="lsaReviewScore">
         </div>
 
         <div class="hr"></div>
 
+        <!-- This Month So Far (LSA) -->
+        <div>
+          <div class="subttl">This Month So Far</div>
+        </div>
+        <div class="grid grid-2">
+          <div>
+            <label class="lbl">Total leads generated so far this month</label>
+            <input type="number" step="1" id="lsaLeadsGen" inputmode="numeric" placeholder="0">
+          </div>
+          <div>
+            <label class="lbl">Total billed leads so far this month</label>
+            <input type="number" step="1" id="lsaBilledLeads" inputmode="numeric" placeholder="0">
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="currency">
+            <label class="lbl">CPL so far this month</label>
+            <span class="prefix">$</span>
+            <input type="number" step="0.01" id="lsaCpl" inputmode="decimal" placeholder="0.00">
+          </div>
+          <div class="percent">
+            <label class="lbl">Call Answer Rate (%) so far this month</label>
+            <span class="suffix">%</span>
+            <input type="number" step="0.01" min="0" max="100" id="lsaAnswerRate" inputmode="decimal" placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- OMITTED in LSA: Ad Spend Status -->
+
+        <div class="hr"></div>
+
+        <!-- Google Review Score & Count (formatted string) -->
+        <div>
+          <label class="lbl">Google Review Score & Count</label>
+          <input type="text" id="lsaReviewScore" placeholder="4.9 stars | 163 reviews"
+                 pattern="^\\s*\\d+(\\.\\d+)?\\s*stars\\s*\\|\\s*\\d+\\s*reviews\\s*$"
+                 title="Use format like: 4.9 stars | 163 reviews">
+        </div>
+
+        <!-- Optional deeper checks (kept) -->
         <div class="grid grid-2">
           <div>
             <label class="lbl">Lead Quality Check (Relevant?)</label>
@@ -316,6 +358,12 @@
           <label class="lbl">Please specify</label>
           <input type="text" id="profileOtherText" placeholder="Type your answer">
         </div>
+
+        <!-- Final Notes -->
+        <div>
+          <label class="lbl">Final Notes</label>
+          <textarea id="finalNotes" placeholder="Describe what exactly you did in your optimization"></textarea>
+        </div>
       </div>
     </div>
 
@@ -344,6 +392,8 @@
   const lsaCheck = document.getElementById('lsaCheck');
   const proceedBtn = document.getElementById('proceedBtn');
   const emailInput = document.getElementById('emailInput');
+  const clientInput = document.getElementById('clientName');
+  const dateInput = document.getElementById('dateInput');
 
   // Containers
   const mainForm = document.getElementById('mainForm');
@@ -366,6 +416,8 @@
   proceedBtn.addEventListener('click', (e)=>{
     e.preventDefault();
     if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
+    if(!clientInput.value){ alert('Please enter the client name.'); clientInput.focus(); return; }
+    if(!dateInput.value){ alert('Please choose the date.'); dateInput.focus(); return; }
     if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
 
     mainForm.classList.remove('hidden');
@@ -390,7 +442,7 @@
     mainForm.scrollIntoView({behavior:'smooth', block:'start'});
   });
 
-  // Submit to webhook as JSON and show response
+  // Submit to webhook as multipart/form-data (+ JSON blob) and show response
   const statusMsg = document.getElementById('statusMsg');
   const submitBtn = document.getElementById('submitBtn');
   mainForm.addEventListener('submit', async (e)=>{
@@ -399,56 +451,87 @@
     statusMsg.textContent = 'Sending…';
     respCard.classList.add('hidden');
 
+    // Build JSON payload (plain numbers; $/% are visual only)
     const payload = {
       email: emailInput.value,
-      selected: { ppc: !ppcCard.classList.contains('hidden'),
-                  lsa: !lsaCard.classList.contains('hidden') },
+      clientName: clientInput.value,
+      date: dateInput.value,
+
+      selected: {
+        ppc: !ppcCard.classList.contains('hidden'),
+        lsa: !lsaCard.classList.contains('hidden')
+      },
 
       ppc: {
         transferCorrect: val('ppcTransfer'),
         transferIssues: val('ppcIssues1Text'),
         spamPresent: val('ppcSpam'),
         spamIssues: val('ppcIssues2Text'),
-        optimizations: [{details:val('ppcOpt1')},{details:val('ppcOpt2')},{details:val('ppcOpt3')}],
+        optimizations: [
+          { details: val('ppcOpt1') },
+          { details: val('ppcOpt2') },
+          { details: val('ppcOpt3') }
+        ],
         metrics: {
-          cpc: num('ppcCpc'), cpl: num('ppcCpl'),
-          leads: int('ppcLeads'), conversionRatePercent: num('ppcCr'),
-          spendStatus: val('ppcSpend')
+          cpc: num('ppcCpc'),                 // $
+          cpl: num('ppcCpl'),                 // $
+          leads: int('ppcLeads'),
+          conversionRatePercent: num('ppcCr'),// %
+          spendStatus: val('ppcSpend'),       // note
+          appointedSpendForMonth: num('ppcAppointedSpend') // $
         }
       },
 
       lsa: {
-        allowedMonthlyBudget: num('lsaAllowedBudget'),
-        actualSpendThisMonth: num('lsaActualSpend'),
+        // First three
+        allowedMonthlyBudget: num('lsaAllowedBudget'), // $
+        actualSpendThisMonth: num('lsaActualSpend'),   // $
         dummyBudgetUsed: val('dummySelect'),
-        dummyBudgetAmount: num('dummyAmount'),
+        dummyBudgetAmount: num('dummyAmount'),         // $
+
+        // This Month So Far
         totalLeadsGenerated: int('lsaLeadsGen'),
         totalBilledLeads: int('lsaBilledLeads'),
-        cpl: num('lsaCpl'),
-        callAnswerRatePercent: num('lsaAnswerRate'),
-        googleReviewScoreAndCount: int('lsaReviewScore'),
+        cpl: num('lsaCpl'),                             // $
+        callAnswerRatePercent: num('lsaAnswerRate'),    // %
+
+        // Reviews formatted string
+        googleReviewScoreAndCount: val('lsaReviewScore'),
+
+        // Optional checks
         leadQualityRelevant: val('leadSelect'),
         leadQualityActions: val('leadActions'),
         budgetPacingUtilized: val('budgetSelect'),
         budgetPacingActions: val('budgetActions'),
+
         profileOptimization: val('profileSelect'),
         profileOptimizationOther: val('profileOtherText')
-      }
+      },
+
+      finalNotes: val('finalNotes')
     };
+
+    // Collect files
+    const ppcShot1 = document.getElementById('ppcShot1')?.files?.[0];
+    const ppcShot2 = document.getElementById('ppcShot2')?.files?.[0];
+    const ppcShot3 = document.getElementById('ppcShot3')?.files?.[0];
+
+    // Build multipart
+    const fd = new FormData();
+    fd.append('payload', new Blob([JSON.stringify(payload)], { type: 'application/json' }), 'payload.json');
+    if (ppcShot1) fd.append('ppcShot1', ppcShot1, ppcShot1.name);
+    if (ppcShot2) fd.append('ppcShot2', ppcShot2, ppcShot2.name);
+    if (ppcShot3) fd.append('ppcShot3', ppcShot3, ppcShot3.name);
 
     try{
       const res = await fetch('https://n8n-14lp.onrender.com/webhook/ads-optimization', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+        method:'POST',
+        body: fd // do not set Content-Type manually
       });
 
-      // Parse JSON if possible; otherwise text
       let bodyText;
-      try {
-        const data = await res.clone().json();
-        bodyText = JSON.stringify(data, null, 2);
-      } catch {
-        bodyText = await res.text();
-      }
+      try { bodyText = JSON.stringify(await res.clone().json(), null, 2); }
+      catch { bodyText = await res.text(); }
 
       respHeader.textContent = `Webhook response • ${res.status} ${res.statusText}${res.ok ? '' : ' (not ok)'}`;
       respBody.textContent = bodyText;
@@ -472,9 +555,5 @@
   function num(id){ const n=parseFloat(val(id)); return isNaN(n)?null:n; }
   function int(id){ const n=parseInt(val(id)); return isNaN(n)?null:n; }
 </script>
-</body>
-</html>
-<!-- partial -->
-  
 </body>
 </html>
