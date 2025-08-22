@@ -40,6 +40,12 @@
   input:focus,select:focus,textarea:focus{outline:none; border-color:var(--g-300);
     box-shadow:0 0 0 3px color-mix(in oklab,var(--ring) 45%,transparent);}
 
+  /* Error state */
+  .error{
+    border-color:#d33 !important;
+    box-shadow:0 0 0 3px rgba(211,51,51,.18) !important;
+  }
+
   /* Prefix $ and suffix % adorners (visual only) */
   .currency,.percent{position:relative;}
   .currency .prefix{
@@ -67,6 +73,14 @@
        cursor:pointer; box-shadow:0 8px 16px rgba(46,125,50,.18);}
   .btn[disabled]{opacity:.6; cursor:not-allowed}
 
+  /* Small controls */
+  .inline{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .danger-btn{
+    border:1px solid #d33; color:#d33; background:#fff;
+    border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer;
+  }
+  .danger-btn[disabled]{opacity:.5; cursor:not-allowed}
+
   /* Checkboxes */
   .checks{display:flex; justify-content:center; gap:18px; flex-wrap:wrap; margin:8px 0 12px}
   .checks label{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:400;}
@@ -82,6 +96,24 @@
   .email-wrap{max-width:560px; margin:0 auto;}
   .email-wrap .lbl{ text-align:center; }
   .email-wrap input, .email-wrap select{ display:block; margin:0 auto; }
+
+  /* Image preview + lightbox */
+  .thumb{
+    width:100%; max-width:240px; aspect-ratio:16/10; object-fit:cover;
+    border:1px solid var(--line); border-radius:12px; cursor:zoom-in;
+    box-shadow:0 4px 10px rgba(0,0,0,.06); margin-top:8px;
+  }
+  .lightbox{
+    position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:9999;
+  }
+  .lightbox.open{display:flex}
+  .lightbox img{
+    max-width:92vw; max-height:92vh; border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.45);
+  }
+  .lightbox .close{
+    position:absolute; top:16px; right:16px; background:#fff; border-radius:999px; padding:8px 12px;
+    border:none; cursor:pointer; font-weight:600;
+  }
 </style>
 </head>
 <body>
@@ -120,7 +152,7 @@
   </div>
 
   <!-- STEP 2 -->
-  <form id="mainForm" class="hidden" enctype="multipart/form-data">
+  <form id="mainForm" class="hidden" novalidate>
 
     <!-- PPC -->
     <div id="ppcCard" class="card hidden">
@@ -130,7 +162,7 @@
         <!-- Transfer & Spam checks -->
         <div>
           <label class="lbl">Leads transferred from WhatConverts to Google Ads correctly?</label>
-          <select id="ppcTransfer">
+          <select id="ppcTransfer" required>
             <option value="" disabled selected>Choose</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
@@ -143,7 +175,7 @@
 
         <div>
           <label class="lbl">Leads in WhatConverts include spam or irrelevant inquiries?</label>
-          <select id="ppcSpam">
+          <select id="ppcSpam" required>
             <option value="" disabled selected>Choose</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
@@ -154,33 +186,51 @@
           <textarea id="ppcIssues2Text" placeholder="Describe issues"></textarea>
         </div>
 
-        <!-- Optimization rows directly after spam question -->
         <div class="hr"></div>
+
+        <!-- Optimization rows with file upload + preview + remove -->
         <div class="grid grid-2">
           <div>
-            <label class="lbl">Optimization #1 – Details</label>
+            <label class="lbl">Optimization #1 – Details (optional)</label>
             <textarea id="ppcOpt1"></textarea>
           </div>
-          <div style="align-self:end">
-            <input type="file" id="ppcShot1" accept="image/*" aria-label="Upload screenshot for optimization #1">
+          <div>
+            <label class="lbl">Screenshot #1</label>
+            <div class="inline">
+              <input type="file" id="ppcShot1" accept="image/*" aria-label="Upload screenshot for optimization #1">
+              <button type="button" id="ppcShot1Remove" class="danger-btn" disabled>Remove image</button>
+            </div>
+            <div id="ppcShot1Preview"></div>
           </div>
         </div>
+
         <div class="grid grid-2">
           <div>
-            <label class="lbl">Optimization #2 – Details</label>
+            <label class="lbl">Optimization #2 – Details (optional)</label>
             <textarea id="ppcOpt2"></textarea>
           </div>
-          <div style="align-self:end">
-            <input type="file" id="ppcShot2" accept="image/*" aria-label="Upload screenshot for optimization #2">
+          <div>
+            <label class="lbl">Screenshot #2</label>
+            <div class="inline">
+              <input type="file" id="ppcShot2" accept="image/*" aria-label="Upload screenshot for optimization #2">
+              <button type="button" id="ppcShot2Remove" class="danger-btn" disabled>Remove image</button>
+            </div>
+            <div id="ppcShot2Preview"></div>
           </div>
         </div>
+
         <div class="grid grid-2">
           <div>
-            <label class="lbl">Optimization #3 – Details</label>
+            <label class="lbl">Optimization #3 – Details (optional)</label>
             <textarea id="ppcOpt3"></textarea>
           </div>
-          <div style="align-self:end">
-            <input type="file" id="ppcShot3" accept="image/*" aria-label="Upload screenshot for optimization #3">
+          <div>
+            <label class="lbl">Screenshot #3</label>
+            <div class="inline">
+              <input type="file" id="ppcShot3" accept="image/*" aria-label="Upload screenshot for optimization #3">
+              <button type="button" id="ppcShot3Remove" class="danger-btn" disabled>Remove image</button>
+            </div>
+            <div id="ppcShot3Preview"></div>
           </div>
         </div>
 
@@ -194,29 +244,29 @@
           <div class="currency">
             <label class="lbl">CPC (cost per click) so far this month</label>
             <span class="prefix">$</span>
-            <input type="number" step="0.01" id="ppcCpc" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" id="ppcCpc" inputmode="decimal" placeholder="0.00" required>
           </div>
           <div class="currency">
             <label class="lbl">CPL (cost per lead) so far this month</label>
             <span class="prefix">$</span>
-            <input type="number" step="0.01" id="ppcCpl" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" id="ppcCpl" inputmode="decimal" placeholder="0.00" required>
           </div>
         </div>
         <div class="grid grid-2">
           <div>
             <label class="lbl">Number of leads so far this month</label>
-            <input type="number" step="1" id="ppcLeads" inputmode="numeric" placeholder="0">
+            <input type="number" step="1" id="ppcLeads" inputmode="numeric" placeholder="0" required>
           </div>
           <div class="percent">
             <label class="lbl">Conversion rate (%) so far this month</label>
             <span class="suffix">%</span>
-            <input type="number" step="0.01" min="0" max="100" id="ppcCr" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" min="0" max="100" id="ppcCr" inputmode="decimal" placeholder="0.00" required>
           </div>
         </div>
 
         <div>
           <label class="lbl">Ad Spend Status</label>
-          <select id="ppcSpend">
+          <select id="ppcSpend" required>
             <option value="" disabled selected>Choose</option>
             <option>Underspending</option>
             <option>Overspending</option>
@@ -229,7 +279,7 @@
         <div class="currency">
           <label class="lbl">Ad Spend Appointed for the Month</label>
           <span class="prefix">$</span>
-          <input type="number" step="0.01" id="ppcAppointedSpend" inputmode="decimal" placeholder="0.00">
+          <input type="number" step="0.01" id="ppcAppointedSpend" inputmode="decimal" placeholder="0.00" required>
         </div>
       </div>
     </div>
@@ -244,19 +294,19 @@
           <div class="currency">
             <label class="lbl">Allowed Monthly Budget</label>
             <span class="prefix">$</span>
-            <input type="number" step="0.01" id="lsaAllowedBudget" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" id="lsaAllowedBudget" inputmode="decimal" placeholder="0.00" required>
           </div>
           <div class="currency">
             <label class="lbl">Actual Spend This Month</label>
             <span class="prefix">$</span>
-            <input type="number" step="0.01" id="lsaActualSpend" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" id="lsaActualSpend" inputmode="decimal" placeholder="0.00" required>
           </div>
         </div>
 
         <div class="grid grid-2">
           <div>
             <label class="lbl">Dummy Budget Used?</label>
-            <select id="dummySelect">
+            <select id="dummySelect" required>
               <option value="" disabled selected>Choose</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
@@ -278,11 +328,11 @@
         <div class="grid grid-2">
           <div>
             <label class="lbl">Total leads generated so far this month</label>
-            <input type="number" step="1" id="lsaLeadsGen" inputmode="numeric" placeholder="0">
+            <input type="number" step="1" id="lsaLeadsGen" inputmode="numeric" placeholder="0" required>
           </div>
           <div>
             <label class="lbl">Total billed leads so far this month</label>
-            <input type="number" step="1" id="lsaBilledLeads" inputmode="numeric" placeholder="0">
+            <input type="number" step="1" id="lsaBilledLeads" inputmode="numeric" placeholder="0" required>
           </div>
         </div>
 
@@ -290,16 +340,14 @@
           <div class="currency">
             <label class="lbl">CPL so far this month</label>
             <span class="prefix">$</span>
-            <input type="number" step="0.01" id="lsaCpl" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" id="lsaCpl" inputmode="decimal" placeholder="0.00" required>
           </div>
           <div class="percent">
             <label class="lbl">Call Answer Rate (%) so far this month</label>
             <span class="suffix">%</span>
-            <input type="number" step="0.01" min="0" max="100" id="lsaAnswerRate" inputmode="decimal" placeholder="0.00">
+            <input type="number" step="0.01" min="0" max="100" id="lsaAnswerRate" inputmode="decimal" placeholder="0.00" required>
           </div>
         </div>
-
-        <!-- OMITTED in LSA: Ad Spend Status -->
 
         <div class="hr"></div>
 
@@ -308,14 +356,14 @@
           <label class="lbl">Google Review Score & Count</label>
           <input type="text" id="lsaReviewScore" placeholder="4.9 stars | 163 reviews"
                  pattern="^\\s*\\d+(\\.\\d+)?\\s*stars\\s*\\|\\s*\\d+\\s*reviews\\s*$"
-                 title="Use format like: 4.9 stars | 163 reviews">
+                 title="Use format like: 4.9 stars | 163 reviews" required>
         </div>
 
         <!-- Optional deeper checks (kept) -->
         <div class="grid grid-2">
           <div>
             <label class="lbl">Lead Quality Check (Relevant?)</label>
-            <select id="leadSelect">
+            <select id="leadSelect" required>
               <option value="" disabled selected>Choose</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
@@ -330,7 +378,7 @@
         <div class="grid grid-2">
           <div>
             <label class="lbl">Budget Pacing Review (Budget fully utilized?)</label>
-            <select id="budgetSelect">
+            <select id="budgetSelect" required>
               <option value="" disabled selected>Choose</option>
               <option value="yes">Yes</option>
               <option value="no">No</option>
@@ -344,7 +392,7 @@
 
         <div>
           <label class="lbl">Profile Optimizations</label>
-          <select id="profileSelect">
+          <select id="profileSelect" required>
             <option value="" disabled selected>Choose</option>
             <option>Hours updated</option>
             <option>Attorney profiles</option>
@@ -362,7 +410,7 @@
         <!-- Final Notes -->
         <div>
           <label class="lbl">Final Notes</label>
-          <textarea id="finalNotes" placeholder="Describe what exactly you did in your optimization"></textarea>
+          <textarea id="finalNotes" placeholder="Describe what exactly you did in your optimization" required></textarea>
         </div>
       </div>
     </div>
@@ -372,6 +420,14 @@
       <div class="card-b center">
         <button id="submitBtn" type="submit" class="btn">Submit</button>
         <div id="statusMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- SUBMISSION SUMMARY (formatted with $ and %) -->
+    <div id="summaryCard" class="card hidden">
+      <div class="card-b">
+        <div class="muted" style="margin-bottom:8px">Submission summary</div>
+        <pre id="summaryBody" class="response"></pre>
       </div>
     </div>
 
@@ -386,83 +442,243 @@
   </form>
 </div>
 
+<!-- Lightbox -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image preview">
+  <button class="close" type="button" id="lightboxClose">Close ✕</button>
+  <img id="lightboxImg" alt="Preview">
+</div>
+
 <script>
-  // Selector
-  const ppcCheck = document.getElementById('ppcCheck');
-  const lsaCheck = document.getElementById('lsaCheck');
-  const proceedBtn = document.getElementById('proceedBtn');
-  const emailInput = document.getElementById('emailInput');
-  const clientInput = document.getElementById('clientName');
+  // ---- selectors / containers ----
+  const ppcCheck  = document.getElementById('ppcCheck');
+  const lsaCheck  = document.getElementById('lsaCheck');
+  const proceedBtn= document.getElementById('proceedBtn');
+  const emailInput= document.getElementById('emailInput');
+  const clientInput=document.getElementById('clientName');
   const dateInput = document.getElementById('dateInput');
 
-  // Containers
-  const mainForm = document.getElementById('mainForm');
-  const ppcCard  = document.getElementById('ppcCard');
-  const lsaCard  = document.getElementById('lsaCard');
-  const submitCard = document.getElementById('submitCard');
+  const mainForm  = document.getElementById('mainForm');
+  const ppcCard   = document.getElementById('ppcCard');
+  const lsaCard   = document.getElementById('lsaCard');
+  const submitCard= document.getElementById('submitCard');
 
-  // Response elements
-  const respCard   = document.getElementById('respCard');
-  const respHeader = document.getElementById('respHeader');
-  const respBody   = document.getElementById('respBody');
+  const summaryCard = document.getElementById('summaryCard');
+  const summaryBody = document.getElementById('summaryBody');
 
-  // Utility: show target when select equals specific value
+  const respCard  = document.getElementById('respCard');
+  const respHeader= document.getElementById('respHeader');
+  const respBody  = document.getElementById('respBody');
+
+  // ---- lightbox ----
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImg');
+  const lightboxClose = document.getElementById('lightboxClose');
+  const openLightbox = src => { lightboxImg.src = src; lightbox.classList.add('open'); };
+  const closeLightbox = ()=>{ lightbox.classList.remove('open'); lightboxImg.src=''; };
+  lightbox.addEventListener('click', e=>{ if(e.target===lightbox) closeLightbox(); });
+  lightboxClose.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLightbox(); });
+
+  // ---- utilities ----
   function showWhen(selectEl, value, targetEl){
     const sync = ()=> targetEl.classList.toggle('hidden', selectEl.value !== value);
-    selectEl.addEventListener('change', sync);
-    sync();
+    selectEl.addEventListener('change', sync); sync();
   }
 
-  proceedBtn.addEventListener('click', (e)=>{
-    e.preventDefault();
-    if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
-    if(!clientInput.value){ alert('Please enter the client name.'); clientInput.focus(); return; }
-    if(!dateInput.value){ alert('Please choose the date.'); dateInput.focus(); return; }
-    if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
+ proceedBtn.addEventListener('click', (e)=>{
+  e.preventDefault();
 
-    mainForm.classList.remove('hidden');
-    ppcCard.classList.toggle('hidden', !ppcCheck.checked);
-    lsaCard.classList.toggle('hidden', !lsaCheck.checked);
-    submitCard.classList.remove('hidden');
-    respCard.classList.add('hidden');
+  if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
+  if(!clientInput.value){ alert('Please enter the client name.'); clientInput.focus(); return; }
+  if(!dateInput.value){ alert('Please choose the date.'); dateInput.focus(); return; }
+  if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
 
-    // PPC logic
-    showWhen(document.getElementById('ppcTransfer'),'no', document.getElementById('ppcIssues1')); // issues when NO
-    showWhen(document.getElementById('ppcSpam'),'yes', document.getElementById('ppcIssues2'));    // issues when YES
+  mainForm.classList.remove('hidden');
+  ppcCard.classList.toggle('hidden', !ppcCheck.checked);
+  lsaCard.classList.toggle('hidden', !lsaCheck.checked);
+  submitCard.classList.remove('hidden');
+  respCard.classList.add('hidden');
+  summaryCard.classList.add('hidden');
 
-    // LSA logic
-    showWhen(document.getElementById('dummySelect'),'yes', document.getElementById('dummyAmountWrap'));
-    showWhen(document.getElementById('leadSelect'),'yes', document.getElementById('leadActionsWrap'));
-    showWhen(document.getElementById('budgetSelect'),'yes', document.getElementById('budgetActionsWrap'));
-    const profileSel = document.getElementById('profileSelect');
-    const profileWrap = document.getElementById('profileOtherWrap');
-    const syncProfile = ()=> profileWrap.classList.toggle('hidden', profileSel.value !== 'other');
-    profileSel.addEventListener('change', syncProfile); syncProfile();
+  // PPC show/hide helpers
+  showWhen(document.getElementById('ppcTransfer'),'no', document.getElementById('ppcIssues1'));
+  showWhen(document.getElementById('ppcSpam'),'yes', document.getElementById('ppcIssues2'));
 
-    mainForm.scrollIntoView({behavior:'smooth', block:'start'});
+  // LSA show/hide helpers
+  showWhen(document.getElementById('dummySelect'),'yes', document.getElementById('dummyAmountWrap'));
+  showWhen(document.getElementById('leadSelect'),'yes', document.getElementById('leadActionsWrap'));
+  showWhen(document.getElementById('budgetSelect'),'yes', document.getElementById('budgetActionsWrap'));
+  const profileSel = document.getElementById('profileSelect');
+  const profileWrap = document.getElementById('profileOtherWrap');
+  const syncProfile = ()=> profileWrap.classList.toggle('hidden', profileSel.value !== 'other');
+  profileSel.addEventListener('change', syncProfile); syncProfile();
+
+  mainForm.scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+  // ---- image preview/delete ----
+  const objectUrls = {};          // inputId -> blob URL
+  const imageControls = new Map();// inputId -> { clear() }
+
+  function setupPreview(inputId, previewId, removeBtnId){
+    const input = document.getElementById(inputId);
+    const previewWrap = document.getElementById(previewId);
+    const removeBtn = document.getElementById(removeBtnId);
+
+    const clearImage = ()=>{
+      if(objectUrls[inputId]){ URL.revokeObjectURL(objectUrls[inputId]); delete objectUrls[inputId]; }
+      input.value = ''; previewWrap.innerHTML=''; removeBtn.disabled = true;
+    };
+
+    input.addEventListener('change', ()=>{
+      if(objectUrls[inputId]){ URL.revokeObjectURL(objectUrls[inputId]); delete objectUrls[inputId]; }
+      previewWrap.innerHTML = '';
+
+      const f = input.files?.[0] || null;
+      if(!f){ removeBtn.disabled=true; return; }
+
+      const url = URL.createObjectURL(f);
+      objectUrls[inputId]=url;
+      const img=document.createElement('img');
+      img.className='thumb'; img.src=url; img.alt='Selected screenshot';
+      img.addEventListener('click', ()=> openLightbox(url));
+      previewWrap.appendChild(img);
+      removeBtn.disabled=false;
+    });
+
+    removeBtn.addEventListener('click', clearImage);
+    imageControls.set(inputId, { clear: clearImage });
+  }
+  setupPreview('ppcShot1','ppcShot1Preview','ppcShot1Remove');
+  setupPreview('ppcShot2','ppcShot2Preview','ppcShot2Remove');
+  setupPreview('ppcShot3','ppcShot3Preview','ppcShot3Remove');
+
+  // ---- validation ----
+  const setErr = (id, bad)=>{ const el=document.getElementById(id); if(el) el.classList.toggle('error', !!bad); };
+  const requireText = id => { const el=document.getElementById(id); if(!el) return true; const ok=(el.value||'').trim()!==''; setErr(id,!ok); return ok; };
+  const requireNumber = id => { const el=document.getElementById(id); if(!el) return true; const v=(el.value||'').trim(); const ok=v!=='' && !isNaN(Number(v)); setErr(id,!ok); return ok; };
+  const requireSelect = id => { const el=document.getElementById(id); if(!el) return true; const ok=(el.value||'').trim()!==''; setErr(id,!ok); return ok; };
+
+  document.addEventListener('input', e=>{ if(e.target.matches('input,textarea')) e.target.classList.remove('error'); });
+  document.addEventListener('change', e=>{ if(e.target.matches('select,input[type="file"]')) e.target.classList.remove('error'); });
+
+  function validatePPC(){
+    if(ppcCard.classList.contains('hidden')) return true;
+    if(!requireSelect('ppcTransfer')) return fail('PPC');
+    if(val('ppcTransfer')==='no' && !requireText('ppcIssues1Text')) return fail('PPC');
+    if(!requireSelect('ppcSpam')) return fail('PPC');
+    if(val('ppcSpam')==='yes' && !requireText('ppcIssues2Text')) return fail('PPC');
+    if(!requireNumber('ppcCpc')) return fail('PPC');
+    if(!requireNumber('ppcCpl')) return fail('PPC');
+    if(!requireNumber('ppcLeads')) return fail('PPC');
+    if(!requireNumber('ppcCr')) return fail('PPC');
+    if(!requireSelect('ppcSpend')) return fail('PPC');
+    if(!requireNumber('ppcAppointedSpend')) return fail('PPC');
+    return true;
+  }
+  function validateLSA(){
+    if(lsaCard.classList.contains('hidden')) return true;
+    if(!requireNumber('lsaAllowedBudget')) return fail('LSA');
+    if(!requireNumber('lsaActualSpend')) return fail('LSA');
+    if(!requireSelect('dummySelect')) return fail('LSA');
+    if(val('dummySelect')==='yes' && !requireNumber('dummyAmount')) return fail('LSA');
+    if(!requireNumber('lsaLeadsGen')) return fail('LSA');
+    if(!requireNumber('lsaBilledLeads')) return fail('LSA');
+    if(!requireNumber('lsaCpl')) return fail('LSA');
+    if(!requireNumber('lsaAnswerRate')) return fail('LSA');
+    if(!requireText('lsaReviewScore')) return fail('LSA');
+    if(!requireSelect('leadSelect')) return fail('LSA');
+    if(val('leadSelect')==='yes' && !requireText('leadActions')) return fail('LSA');
+    if(!requireSelect('budgetSelect')) return fail('LSA');
+    if(val('budgetSelect')==='yes' && !requireText('budgetActions')) return fail('LSA');
+    if(!requireSelect('profileSelect')) return fail('LSA');
+    if(val('profileSelect')==='other' && !requireText('profileOtherText')) return fail('LSA');
+    if(!requireText('finalNotes')) return fail('LSA');
+    return true;
+  }
+  const failMsgs={PPC:'Please complete the PPC section or close it.', LSA:'Please complete the LSA section or close it.'};
+  function fail(section){ alert(failMsgs[section] || 'Please complete the required section or close it.'); return false; }
+  function validateRequiredSections(){ return validatePPC() && validateLSA(); }
+
+  // if screenshot attached but no details, mark details red and remove image
+  function pruneEmptyOptimizationImages(){
+    const removed=[];
+    for(let i=1;i<=3;i++){
+      const d=document.getElementById(`ppcOpt${i}`);
+      const f=document.getElementById(`ppcShot${i}`);
+      const hasFile=!!(f?.files?.[0]);
+      const empty=!(d && d.value.trim());
+      if(hasFile && empty){
+        setErr(`ppcOpt${i}`, true);
+        imageControls.get(`ppcShot${i}`)?.clear();
+        removed.push(i);
+      }
+    }
+    if(removed.length) alert(`Removed screenshot(s) for Optimization #${removed.join(', ')} because the details are empty.`);
+  }
+
+  // ---- files -> base64 (fast via Promise.all, only selected files) ----
+  const fileToBase64 = file => new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(String(r.result).split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
   });
+  async function collectFilesBase64(){
+    const inputs = ['ppcShot1','ppcShot2','ppcShot3'].map(id=>document.getElementById(id));
+    const files  = inputs.map(i=>i?.files?.[0]||null);
+    const tasks  = files.map(f=>f?fileToBase64(f):null);
+    const data   = await Promise.all(tasks.map(p=>p || Promise.resolve(null)));
 
-  // Submit to webhook as multipart/form-data (+ JSON blob) and show response
+    const out = {};
+    files.forEach((f,idx)=>{
+      if(f && data[idx]){
+        const key = ['ppcShot1','ppcShot2','ppcShot3'][idx];
+        out[key] = { fileName: f.name, mimeType: f.type || 'application/octet-stream', data: data[idx] };
+      }
+    });
+    return out;
+  }
+
+  // Format helpers for displaying $ and %
+  const fmtUSD = v => (v==null || isNaN(v)) ? '—' : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(v));
+  const fmtPct = v => (v==null || isNaN(v)) ? '—' : `${Number(v).toFixed(2)}%`;
+  const fmtInt = v => (v==null || isNaN(v)) ? '—' : new Intl.NumberFormat('en-US').format(Number(v));
+
+  // ---- submit ----
   const statusMsg = document.getElementById('statusMsg');
   const submitBtn = document.getElementById('submitBtn');
-  mainForm.addEventListener('submit', async (e)=>{
+
+  mainForm.addEventListener('submit', async e=>{
     e.preventDefault();
+
+    // Decide which sections are open
+    const includePPC = !ppcCard.classList.contains('hidden');
+    const includeLSA = !lsaCard.classList.contains('hidden');
+
+    // Only prune if PPC section is shown
+    if (includePPC) {
+      pruneEmptyOptimizationImages();
+    }
+
+    // Validate whichever sections are open
+    if (!validateRequiredSections()) return;
+
     submitBtn.disabled = true;
     statusMsg.textContent = 'Sending…';
     respCard.classList.add('hidden');
+    summaryCard.classList.add('hidden');
 
-    // Build JSON payload (plain numbers; $/% are visual only)
+    // Build JSON payload (include only OPEN sections)
     const payload = {
       email: emailInput.value,
       clientName: clientInput.value,
       date: dateInput.value,
+      finalNotes: val('finalNotes')
+    };
 
-      selected: {
-        ppc: !ppcCard.classList.contains('hidden'),
-        lsa: !lsaCard.classList.contains('hidden')
-      },
-
-      ppc: {
+    if (includePPC) {
+      payload.ppc = {
         transferCorrect: val('ppcTransfer'),
         transferIssues: val('ppcIssues1Text'),
         spamPresent: val('ppcSpam'),
@@ -473,87 +689,115 @@
           { details: val('ppcOpt3') }
         ],
         metrics: {
-          cpc: num('ppcCpc'),                 // $
-          cpl: num('ppcCpl'),                 // $
+          cpc: num('ppcCpc'),
+          cpl: num('ppcCpl'),
           leads: int('ppcLeads'),
-          conversionRatePercent: num('ppcCr'),// %
-          spendStatus: val('ppcSpend'),       // note
-          appointedSpendForMonth: num('ppcAppointedSpend') // $
+          conversionRatePercent: num('ppcCr'),
+          spendStatus: val('ppcSpend'),
+          appointedSpendForMonth: num('ppcAppointedSpend')
         }
-      },
+      };
+    }
 
-      lsa: {
-        // First three
-        allowedMonthlyBudget: num('lsaAllowedBudget'), // $
-        actualSpendThisMonth: num('lsaActualSpend'),   // $
+    if (includeLSA) {
+      payload.lsa = {
+        allowedMonthlyBudget: num('lsaAllowedBudget'),
+        actualSpendThisMonth: num('lsaActualSpend'),
         dummyBudgetUsed: val('dummySelect'),
-        dummyBudgetAmount: num('dummyAmount'),         // $
-
-        // This Month So Far
+        dummyBudgetAmount: num('dummyAmount'),
         totalLeadsGenerated: int('lsaLeadsGen'),
         totalBilledLeads: int('lsaBilledLeads'),
-        cpl: num('lsaCpl'),                             // $
-        callAnswerRatePercent: num('lsaAnswerRate'),    // %
-
-        // Reviews formatted string
+        cpl: num('lsaCpl'),
+        callAnswerRatePercent: num('lsaAnswerRate'),
         googleReviewScoreAndCount: val('lsaReviewScore'),
-
-        // Optional checks
         leadQualityRelevant: val('leadSelect'),
         leadQualityActions: val('leadActions'),
         budgetPacingUtilized: val('budgetSelect'),
         budgetPacingActions: val('budgetActions'),
-
         profileOptimization: val('profileSelect'),
         profileOptimizationOther: val('profileOtherText')
-      },
+      };
+    }
 
-      finalNotes: val('finalNotes')
-    };
+    // Collect images as base64 into payload
+    payload.files = await collectFilesBase64();
 
-    // Collect files
-    const ppcShot1 = document.getElementById('ppcShot1')?.files?.[0];
-    const ppcShot2 = document.getElementById('ppcShot2')?.files?.[0];
-    const ppcShot3 = document.getElementById('ppcShot3')?.files?.[0];
+    // ---- Submission summary (formatted with $ and %) ----
+    let summary = `Client: ${payload.clientName}\nDate: ${payload.date}\nEmail: ${payload.email}\n\n`;
+    if (includePPC) {
+      const m = payload.ppc.metrics;
+      summary += `PPC\n`;
+      summary += `- CPC: ${fmtUSD(m.cpc)}\n`;
+      summary += `- CPL: ${fmtUSD(m.cpl)}\n`;
+      summary += `- Leads: ${fmtInt(m.leads)}\n`;
+      summary += `- Conversion Rate: ${fmtPct(m.conversionRatePercent)}\n`;
+      summary += `- Spend Status: ${m.spendStatus || '—'}\n`;
+      summary += `- Appointed Spend: ${fmtUSD(m.appointedSpendForMonth)}\n\n`;
+    }
+    if (includeLSA) {
+      const l = payload.lsa;
+      summary += `LSA\n`;
+      summary += `- Allowed Monthly Budget: ${fmtUSD(l.allowedMonthlyBudget)}\n`;
+      summary += `- Actual Spend This Month: ${fmtUSD(l.actualSpendThisMonth)}\n`;
+      summary += `- Dummy Budget Used: ${l.dummyBudgetUsed || '—'}\n`;
+      summary += `- Dummy Budget Amount: ${fmtUSD(l.dummyBudgetAmount)}\n`;
+      summary += `- Total Leads Generated: ${fmtInt(l.totalLeadsGenerated)}\n`;
+      summary += `- Total Billed Leads: ${fmtInt(l.totalBilledLeads)}\n`;
+      summary += `- CPL: ${fmtUSD(l.cpl)}\n`;
+      summary += `- Call Answer Rate: ${fmtPct(l.callAnswerRatePercent)}\n`;
+      summary += `- Reviews: ${l.googleReviewScoreAndCount || '—'}\n`;
+    }
+    summaryBody.textContent = summary;
+    summaryCard.classList.remove('hidden');
 
-    // Build multipart
-    const fd = new FormData();
-    fd.append('payload', new Blob([JSON.stringify(payload)], { type: 'application/json' }), 'payload.json');
-    if (ppcShot1) fd.append('ppcShot1', ppcShot1, ppcShot1.name);
-    if (ppcShot2) fd.append('ppcShot2', ppcShot2, ppcShot2.name);
-    if (ppcShot3) fd.append('ppcShot3', ppcShot3, ppcShot3.name);
+    // Decide which webhook(s) to send to
+    const urls = [];
+    if (includePPC && !includeLSA) urls.push("https://n8n-14lp.onrender.com/webhook/ppc-only");
+    if (!includePPC && includeLSA) urls.push("https://n8n-14lp.onrender.com/webhook/lsa-only");
+    if (includePPC && includeLSA) {
+      urls.push("https://n8n-14lp.onrender.com/webhook/ppc-only");
+      urls.push("https://n8n-14lp.onrender.com/webhook/lsa-only");
+    }
 
-    try{
-      const res = await fetch('https://n8n-14lp.onrender.com/webhook/ads-optimization', {
-        method:'POST',
-        body: fd // do not set Content-Type manually
-      });
+    try {
+      const responses = await Promise.all(
+        urls.map(u =>
+          fetch(u, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+        )
+      );
 
-      let bodyText;
-      try { bodyText = JSON.stringify(await res.clone().json(), null, 2); }
-      catch { bodyText = await res.text(); }
+      let allText = "";
+      for (const res of responses) {
+        let bodyText;
+        try { bodyText = JSON.stringify(await res.clone().json(), null, 2); }
+        catch { bodyText = await res.text(); }
+        allText += `Webhook: ${res.url}\nStatus: ${res.status} ${res.statusText}\n${bodyText}\n\n`;
+      }
 
-      respHeader.textContent = `Webhook response • ${res.status} ${res.statusText}${res.ok ? '' : ' (not ok)'}`;
-      respBody.textContent = bodyText;
+      respHeader.textContent = "Webhook responses";
+      respBody.textContent = allText;
       respCard.classList.remove('hidden');
-
-      statusMsg.textContent = res.ok ? 'Success! Data sent.' : 'Sent, but the server returned an error.';
-      respCard.scrollIntoView({behavior:'smooth', block:'start'});
-    }catch(err){
+      statusMsg.textContent = "Success! Data sent.";
+      respCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
       statusMsg.textContent = 'Network error. Please try again.';
       respHeader.textContent = 'Webhook response • Network error';
       respBody.textContent = String(err);
       respCard.classList.remove('hidden');
       console.error(err);
-    }finally{
+    } finally {
       submitBtn.disabled = false;
     }
-  });
+  }); // end submit handler
 
-  // helpers
-  function val(id){ const el=document.getElementById(id); return el?el.value:''; }
-  function num(id){ const n=parseFloat(val(id)); return isNaN(n)?null:n; }
-  function int(id){ const n=parseInt(val(id)); return isNaN(n)?null:n; }
+  // ---- helpers ----
+  const val = id => { const el=document.getElementById(id); return el?el.value:''; };
+  const num = id => { const n=parseFloat(val(id)); return isNaN(n)?null:n; };
+  const int = id => { const n=parseInt(val(id)); return isNaN(n)?null:n; };
 </script>
 </body>
 </html>
