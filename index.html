@@ -129,7 +129,7 @@
         <label><input id="lsaCheck" type="checkbox"> Local Services Ads Optimization</label>
       </div>
 
-      <!-- Email + Client + Date -->
+      <!-- Email + Client + Date (+ new fields) -->
       <div class="email-wrap grid">
         <div>
           <label class="lbl">Email (required)</label>
@@ -139,6 +139,26 @@
           <label class="lbl">Client Name (required)</label>
           <input type="text" id="clientName" placeholder="Enter client name" required>
         </div>
+
+        <!-- NEW: Task ID -->
+        <div>
+          <label class="lbl">What is the task ID? (required)</label>
+          <input type="text" id="taskIdInput" placeholder="e.g., 89291361" required>
+        </div>
+
+        <!-- NEW: CS Manager (names only; value = ID) -->
+        <div>
+          <label class="lbl">Who is the CS manager of this client? (required)</label>
+          <select id="csManagerSelect" required>
+            <option value="" disabled selected>Choose manager</option>
+            <option value="89291361">Camila Parodi</option>
+            <option value="89206479">Luiza Feijó</option>
+            <option value="89206480">Maria Aguilar</option>
+            <option value="38234284">Melissa Avellán</option>
+          </select>
+          <div class="note">The payload includes the manager’s <strong>ID and name</strong>.</div>
+        </div>
+
         <div>
           <label class="lbl">Date (required)</label>
           <input type="date" id="dateInput" required>
@@ -455,6 +475,8 @@
   const proceedBtn= document.getElementById('proceedBtn');
   const emailInput= document.getElementById('emailInput');
   const clientInput=document.getElementById('clientName');
+  const taskIdInput = document.getElementById('taskIdInput');          // NEW
+  const csManagerSelect = document.getElementById('csManagerSelect');  // NEW
   const dateInput = document.getElementById('dateInput');
 
   const mainForm  = document.getElementById('mainForm');
@@ -485,36 +507,38 @@
     selectEl.addEventListener('change', sync); sync();
   }
 
- proceedBtn.addEventListener('click', (e)=>{
-  e.preventDefault();
+  proceedBtn.addEventListener('click', (e)=>{
+    e.preventDefault();
 
-  if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
-  if(!clientInput.value){ alert('Please enter the client name.'); clientInput.focus(); return; }
-  if(!dateInput.value){ alert('Please choose the date.'); dateInput.focus(); return; }
-  if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
+    if(!emailInput.value){ alert('Please enter your email.'); emailInput.focus(); return; }
+    if(!clientInput.value){ alert('Please enter the client name.'); clientInput.focus(); return; }
+    if(!taskIdInput.value){ alert('Please enter the task ID.'); taskIdInput.focus(); return; }              // NEW
+    if(!csManagerSelect.value){ alert('Please choose the CS manager.'); csManagerSelect.focus(); return; }  // NEW
+    if(!dateInput.value){ alert('Please choose the date.'); dateInput.focus(); return; }
+    if(!ppcCheck.checked && !lsaCheck.checked){ alert('Please select at least one option.'); return; }
 
-  mainForm.classList.remove('hidden');
-  ppcCard.classList.toggle('hidden', !ppcCheck.checked);
-  lsaCard.classList.toggle('hidden', !lsaCheck.checked);
-  submitCard.classList.remove('hidden');
-  respCard.classList.add('hidden');
-  summaryCard.classList.add('hidden');
+    mainForm.classList.remove('hidden');
+    ppcCard.classList.toggle('hidden', !ppcCheck.checked);
+    lsaCard.classList.toggle('hidden', !lsaCheck.checked);
+    submitCard.classList.remove('hidden');
+    respCard.classList.add('hidden');
+    summaryCard.classList.add('hidden');
 
-  // PPC show/hide helpers
-  showWhen(document.getElementById('ppcTransfer'),'no', document.getElementById('ppcIssues1'));
-  showWhen(document.getElementById('ppcSpam'),'yes', document.getElementById('ppcIssues2'));
+    // PPC show/hide helpers
+    showWhen(document.getElementById('ppcTransfer'),'no', document.getElementById('ppcIssues1'));
+    showWhen(document.getElementById('ppcSpam'),'yes', document.getElementById('ppcIssues2'));
 
-  // LSA show/hide helpers
-  showWhen(document.getElementById('dummySelect'),'yes', document.getElementById('dummyAmountWrap'));
-  showWhen(document.getElementById('leadSelect'),'yes', document.getElementById('leadActionsWrap'));
-  showWhen(document.getElementById('budgetSelect'),'yes', document.getElementById('budgetActionsWrap'));
-  const profileSel = document.getElementById('profileSelect');
-  const profileWrap = document.getElementById('profileOtherWrap');
-  const syncProfile = ()=> profileWrap.classList.toggle('hidden', profileSel.value !== 'other');
-  profileSel.addEventListener('change', syncProfile); syncProfile();
+    // LSA show/hide helpers
+    showWhen(document.getElementById('dummySelect'),'yes', document.getElementById('dummyAmountWrap'));
+    showWhen(document.getElementById('leadSelect'),'yes', document.getElementById('leadActionsWrap'));
+    showWhen(document.getElementById('budgetSelect'),'yes', document.getElementById('budgetActionsWrap'));
+    const profileSel = document.getElementById('profileSelect');
+    const profileWrap = document.getElementById('profileOtherWrap');
+    const syncProfile = ()=> profileWrap.classList.toggle('hidden', profileSel.value !== 'other');
+    profileSel.addEventListener('change', syncProfile); syncProfile();
 
-  mainForm.scrollIntoView({behavior:'smooth', block:'start'});
-});
+    mainForm.scrollIntoView({behavior:'smooth', block:'start'});
+  });
 
   // ---- image preview/delete ----
   const objectUrls = {};          // inputId -> blob URL
@@ -649,6 +673,15 @@
   const statusMsg = document.getElementById('statusMsg');
   const submitBtn = document.getElementById('submitBtn');
 
+  // helper to get selected manager object (id + name)
+  function getSelectedManager(){
+    const opt = csManagerSelect.options[csManagerSelect.selectedIndex];
+    return {
+      id: csManagerSelect.value || null,
+      name: opt ? opt.text : null
+    };
+  }
+
   mainForm.addEventListener('submit', async e=>{
     e.preventDefault();
 
@@ -669,10 +702,18 @@
     respCard.classList.add('hidden');
     summaryCard.classList.add('hidden');
 
+    // Manager (ID + name)
+    const manager = getSelectedManager();
+
     // Build JSON payload (include only OPEN sections)
     const payload = {
       email: emailInput.value,
       clientName: clientInput.value,
+      taskId: taskIdInput.value,
+      // keep original id, and add name + combined object
+      csManagerId: manager.id,
+      csManagerName: manager.name,
+      csManager: manager,
       date: dateInput.value,
       finalNotes: val('finalNotes')
     };
@@ -723,7 +764,7 @@
     payload.files = await collectFilesBase64();
 
     // ---- Submission summary (formatted with $ and %) ----
-    let summary = `Client: ${payload.clientName}\nDate: ${payload.date}\nEmail: ${payload.email}\n\n`;
+    let summary = `Client: ${payload.clientName}\nTask ID: ${payload.taskId}\nCS Manager: ${manager.name || '—'}\nDate: ${payload.date}\nEmail: ${payload.email}\n\n`;
     if (includePPC) {
       const m = payload.ppc.metrics;
       summary += `PPC\n`;
